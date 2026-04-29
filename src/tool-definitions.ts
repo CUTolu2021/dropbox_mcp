@@ -14,8 +14,32 @@ const toolDefinitions = [
       },
     },
     {
+      name: 'create_file',
+      description: 'Create or overwrite a file in Dropbox. Supports text (utf8) and binary data (base64).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'Path to create the file at',
+          },
+          content: {
+            type: 'string',
+            description: 'File content. Use plain text for utf8 or base64 text for binary files.',
+          },
+          encoding: {
+            type: 'string',
+            enum: ['utf8', 'base64'],
+            description: 'Content encoding (default: utf8)',
+            default: 'utf8'
+          }
+        },
+        required: ['path', 'content'],
+      },
+    },
+    {
       name: 'upload_file',
-      description: 'Upload a file (integrates with Dropbox)',
+      description: 'Upload a file (base64 content). Works with binary files like .docx/.pdf/.xlsx.',
       inputSchema: {
         type: 'object',
         properties: {

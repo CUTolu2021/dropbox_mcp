@@ -136,6 +136,20 @@ class DbxServer {
         switch (request.params.name) {
           case 'list_files':
             return await dbxApi.listFiles(String(request.params.arguments?.path || ''));
+          case 'create_file': {
+            const encoding = String(request.params.arguments?.encoding || 'utf8');
+            if (encoding !== 'utf8' && encoding !== 'base64') {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                'Invalid encoding. Supported values are "utf8" and "base64".'
+              );
+            }
+            return await dbxApi.createFile(
+              String(request.params.arguments?.path),
+              String(request.params.arguments?.content),
+              encoding
+            );
+          }
           case 'upload_file':
             return await dbxApi.uploadFile(
               String(request.params.arguments?.path),

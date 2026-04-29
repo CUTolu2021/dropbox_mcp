@@ -112,6 +112,17 @@ jest.mock('../src/dbx-api.js', () => ({
       }]
     });
   }),
+  createFile: jest.fn().mockImplementation(() => {
+    return Promise.resolve({
+      content: [{
+        text: JSON.stringify({
+          name: 'mock-file.txt',
+          path_display: '/mock-folder/mock-file.txt',
+          id: 'mock-file-id'
+        })
+      }]
+    });
+  }),
   listFiles: jest.fn().mockImplementation(() => {
     return Promise.resolve({
       content: [{
@@ -209,6 +220,7 @@ jest.mock('./dropbox/test-helpers.js', () => {
           });
           
         case 'upload_file':
+        case 'create_file':
           return Promise.resolve({
             content: [{
               text: JSON.stringify({

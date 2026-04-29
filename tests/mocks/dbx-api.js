@@ -22,6 +22,18 @@ export const uploadFile = jest.fn().mockResolvedValue({
     }]
 });
 
+export const createFile = jest.fn().mockResolvedValue({
+    content: [{
+        text: JSON.stringify({
+            name: 'mock-file.txt',
+            path_display: '/mock-file.txt',
+            id: 'mock-file-id',
+            size: 100,
+            server_modified: new Date().toISOString()
+        })
+    }]
+});
+
 export const listFiles = jest.fn().mockResolvedValue({
     content: [{
         text: JSON.stringify([

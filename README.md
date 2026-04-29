@@ -100,7 +100,8 @@ Optional:
 ### File Operations
 
 - `list_files`: List files in a directory
-- `upload_file`: Upload a file
+- `create_file`: Create or overwrite a file (`utf8` text or `base64` binary content)
+- `upload_file`: Upload a file (base64 content, supports binary files)
 - `download_file`: Download a file
 - `safe_delete_item`: Safely delete with recycle bin support
 - `create_folder`: Create a new folder
@@ -125,6 +126,7 @@ Below is a mapping of server actions to the minimum Dropbox OAuth scopes (permis
 | Server Action         | Required Dropbox Scopes                        |
 |---------------------- |-----------------------------------------------|
 | list_files            | `files.metadata.read`                         |
+| create_file           | `files.content.write`, `files.metadata.write` |
 | upload_file           | `files.content.write`, `files.metadata.write` |
 | download_file         | `files.content.read`                          |
 | safe_delete_item      | `files.metadata.write`                        |
@@ -151,10 +153,17 @@ For more details on Dropbox scopes, see the [Dropbox Permissions Documentation](
 // List files in root directory
 await mcp.useTool("dbx-mcp-server", "list_files", { path: "" });
 
-// Upload a file
+// Create a text file
+await mcp.useTool("dbx-mcp-server", "create_file", {
+  path: "/notes/meeting.md",
+  content: "# Meeting Notes\nAction items...",
+  encoding: "utf8",
+});
+
+// Create/upload a binary file (docx/pdf/xlsx/etc.)
 await mcp.useTool("dbx-mcp-server", "upload_file", {
-  path: "/test.txt",
-  content: Buffer.from("Hello World").toString("base64"),
+  path: "/proposals/proposal.docx",
+  content: Buffer.from(binaryBytes).toString("base64"),
 });
 
 // Search for files
@@ -164,6 +173,11 @@ await mcp.useTool("dbx-mcp-server", "search_file_db", {
   max_results: 10,
 });
 ```
+
+### Remote MCP Deployment Note
+
+If this MCP runs on a remote host (for example, DigitalOcean), it cannot read files from a user's local machine directly.  
+For binary uploads, pass file bytes as base64 through `create_file` (`encoding: "base64"`) or `upload_file`.
 
 ## Development
 

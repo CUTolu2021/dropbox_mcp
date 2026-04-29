@@ -87,8 +87,16 @@ async function listFiles(path: string): Promise<McpToolResponse> {
 }
 
 async function uploadFile(path: string, content: string): Promise<McpToolResponse> {
+    return createFile(path, content, 'base64');
+}
+
+async function createFile(
+    path: string,
+    content: string,
+    encoding: 'utf8' | 'base64' = 'utf8'
+): Promise<McpToolResponse> {
     try {
-        const buffer = Buffer.from(content, 'base64');
+        const buffer = Buffer.from(content, encoding);
         const client = await getDropboxClient();
         
         await client.filesUpload({
@@ -824,6 +832,7 @@ async function getFileContent(path: string): Promise<McpToolResponse> {
 
 export { 
     listFiles, 
+    createFile,
     uploadFile, 
     downloadFile, 
     deleteItem,

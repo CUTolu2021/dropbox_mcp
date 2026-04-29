@@ -1,6 +1,8 @@
 import * as readline from 'readline';
 import { randomBytes } from 'crypto';
 import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { generateAuthUrl, exchangeCodeForTokens } from './auth.js';
 import { encryptData } from './security-utils.js';
 import open from 'open';
@@ -22,6 +24,63 @@ interface McpConfig {
 
 interface ClaudeConfig extends McpConfig {
     globalShortcut: string;
+}
+
+function getClaudeConfigPath(): string {
+    if (process.platform === 'win32') {
+        return path.join(
+            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+            'Claude',
+            'claude_desktop_config.json'
+        );
+    }
+    if (process.platform === 'darwin') {
+        return path.join(
+            os.homedir(),
+            'Library',
+            'Application Support',
+            'Claude',
+            'claude_desktop_config.json'
+        );
+    }
+    return path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json');
+}
+
+function getClineConfigPath(): string {
+    if (process.platform === 'win32') {
+        return path.join(
+            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+            'Code',
+            'User',
+            'globalStorage',
+            'saoudrizwan.claude-dev',
+            'settings',
+            'cline_mcp_settings.json'
+        );
+    }
+    if (process.platform === 'darwin') {
+        return path.join(
+            os.homedir(),
+            'Library',
+            'Application Support',
+            'Code',
+            'User',
+            'globalStorage',
+            'saoudrizwan.claude-dev',
+            'settings',
+            'cline_mcp_settings.json'
+        );
+    }
+    return path.join(
+        os.homedir(),
+        '.config',
+        'Code',
+        'User',
+        'globalStorage',
+        'saoudrizwan.claude-dev',
+        'settings',
+        'cline_mcp_settings.json'
+    );
 }
 
 // Create readline interface for user input
@@ -97,12 +156,19 @@ DBX_BLOCKED_PATHS=/.recycle_bin,/.system`;
     const { url: authUrl, codeVerifier } = generateAuthUrl();
     
     // Open auth URL in browser
+    console.log('\nAuthorization URL (open this if browser does not launch automatically):');
+    console.log(authUrl);
     console.log('\nOpening authorization URL in your browser...');
-    await open(authUrl);
+    try {
+        await open(authUrl);
+    } catch (error) {
+        console.log('Could not open browser automatically. Please open the URL above manually.');
+    }
     
     // Get authorization code from user
     console.log('\nPlease authorize the application in your browser.');
-    console.log('After authorization, you will be redirected to a URL containing the authorization code.');
+    console.log('After authorization, you should be redirected to a URL containing the authorization code.');
+    console.log('If you see a localhost error page, that is expected. Copy the "code" parameter from the URL bar.');
     console.log('Copy the "code" parameter from the URL and paste it here.');
     const authCode = await question('\nAuthorization code: ');
     
@@ -153,9 +219,8 @@ DBX_BLOCKED_PATHS=/.recycle_bin,/.system`;
             };
 
             // Get paths for config files
-            const homedir = process.env.HOME || '/Users/Amgad';
-            const claudePath = `${homedir}/Library/Application Support/Claude/claude_desktop_config.json`;
-            const clinePath = `${homedir}/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`;
+            const claudePath = getClaudeConfigPath();
+            const clinePath = getClineConfigPath();
 
             // Generate Claude Desktop config if selected
             if (choice === '1' || choice === '3') {
@@ -183,7 +248,7 @@ DBX_BLOCKED_PATHS=/.recycle_bin,/.system`;
                 console.log('Adding dbx-mcp-server to Claude config');
                 claudeConfig.mcpServers["dbx-mcp-server"] = serverConfig;
                 
-                fs.mkdirSync(`${homedir}/Library/Application Support/Claude`, { recursive: true });
+                fs.mkdirSync(path.dirname(claudePath), { recursive: true });
                 fs.writeFileSync(claudePath, JSON.stringify(claudeConfig, null, 2));
                 console.log('✅ Updated/created Claude Desktop config at:', claudePath);
             }
@@ -211,7 +276,7 @@ DBX_BLOCKED_PATHS=/.recycle_bin,/.system`;
                 console.log('Adding dbx-mcp-server to Cline config');
                 clineConfig.mcpServers["dbx-mcp-server"] = serverConfig;
                 
-                fs.mkdirSync(`${homedir}/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings`, { recursive: true });
+                fs.mkdirSync(path.dirname(clinePath), { recursive: true });
                 fs.writeFileSync(clinePath, JSON.stringify(clineConfig, null, 2));
                 console.log('✅ Updated/created Cline config at:', clinePath);
             }
