@@ -43,7 +43,10 @@ function handleDropboxError(error: any): never {
 // Get a Dropbox client with a valid token
 async function getDropboxClient(): Promise<Dropbox> {
     const token = config.dropbox.accessToken || await getValidAccessToken();
-    return new Dropbox({ accessToken: token });
+    return new Dropbox({
+        accessToken: token,
+        ...(config.dropbox.pathRoot ? { pathRoot: config.dropbox.pathRoot } : {})
+    });
 }
 
 // Helper function to format paths for Dropbox API
@@ -751,6 +754,7 @@ async function getAccountInfo(): Promise<McpToolResponse> {
     try {
         const client = await getDropboxClient();
         const response = await client.usersGetCurrentAccount();
+        const rootInfo = response.result.root_info as any;
 
         const accountInfo = {
             account_id: response.result.account_id,
@@ -765,6 +769,11 @@ async function getAccountInfo(): Promise<McpToolResponse> {
                 team_id: response.result.team.id,
             } : null,
             account_type: response.result.account_type['.tag'] || 'unknown',
+            root_info: rootInfo ? {
+                tag: rootInfo['.tag'] || null,
+                root_namespace_id: rootInfo.root_namespace_id || null,
+                home_namespace_id: rootInfo.home_namespace_id || null
+            } : null
         };
 
         return {

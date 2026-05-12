@@ -28,7 +28,7 @@ A Model Context Protocol (MCP) server that provides integration with Dropbox, al
 Register a Dropbox app at [Dropbox App Console](https://www.dropbox.com/developers/apps):
 
 - Choose "Scoped access" API
-- Choose the access type your app needs
+- Choose the access type your app needs (`Full Dropbox` is required for shared/team folders)
 - Name your app and click "Create app"
 - Under "Permissions", select the desired permissions for the actions you will be using, for example:
     - `files.metadata.read`
@@ -94,6 +94,9 @@ Optional:
 - `TOKEN_REFRESH_THRESHOLD_MINUTES`: Minutes before expiration to refresh token (default: 5)
 - `MAX_TOKEN_REFRESH_RETRIES`: Maximum number of refresh attempts (default: 3)
 - `TOKEN_REFRESH_RETRY_DELAY_MS`: Delay between refresh attempts in ms (default: 1000)
+- `DROPBOX_PATH_ROOT`: Optional Dropbox root override (`home`, `root:<root_namespace_id>`, `ns:<namespace_id>`, or raw JSON)
+
+Note: Legacy `DBX_*` safety vars are also accepted for backward compatibility (`DBX_ALLOWED_PATHS`, `DBX_BLOCKED_PATHS`, etc.).
 
 ## Available Tools
 
@@ -178,6 +181,15 @@ await mcp.useTool("dbx-mcp-server", "search_file_db", {
 
 If this MCP runs on a remote host (for example, DigitalOcean), it cannot read files from a user's local machine directly.  
 For binary uploads, pass file bytes as base64 through `create_file` (`encoding: "base64"`) or `upload_file`.
+
+### Shared Folder Access Notes
+
+If `list_files` returns `path_not_found` for a shared/team folder:
+
+1. Ensure the Dropbox app is configured as `Full Dropbox` (not `App Folder`).
+2. Re-authorize the token after any app permission changes.
+3. Ensure the authorized Dropbox user is a member of the shared folder and the folder is mounted in that user's Dropbox.
+4. For some Business team-space setups, set `DROPBOX_PATH_ROOT=root:<root_namespace_id>` and restart the MCP.
 
 ## Development
 

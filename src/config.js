@@ -77,6 +77,23 @@ const safetyEnvVars = [
     'DROPBOX_ALLOWED_PATHS',
     'DROPBOX_BLOCKED_PATHS'
 ];
+
+// Backward compatibility for older env key names
+if (!process.env.DROPBOX_RECYCLE_BIN_PATH && process.env.DBX_RECYCLE_BIN_PATH) {
+    process.env.DROPBOX_RECYCLE_BIN_PATH = process.env.DBX_RECYCLE_BIN_PATH;
+}
+if (!process.env.DROPBOX_MAX_DELETES_PER_DAY && process.env.DBX_MAX_DELETES_PER_DAY) {
+    process.env.DROPBOX_MAX_DELETES_PER_DAY = process.env.DBX_MAX_DELETES_PER_DAY;
+}
+if (!process.env.DROPBOX_RETENTION_DAYS && process.env.DBX_RETENTION_DAYS) {
+    process.env.DROPBOX_RETENTION_DAYS = process.env.DBX_RETENTION_DAYS;
+}
+if (!process.env.DROPBOX_ALLOWED_PATHS && process.env.DBX_ALLOWED_PATHS) {
+    process.env.DROPBOX_ALLOWED_PATHS = process.env.DBX_ALLOWED_PATHS;
+}
+if (!process.env.DROPBOX_BLOCKED_PATHS && process.env.DBX_BLOCKED_PATHS) {
+    process.env.DROPBOX_BLOCKED_PATHS = process.env.DBX_BLOCKED_PATHS;
+}
 // Validate safety environment variables with defaults
 for (const envVar of safetyEnvVars) {
     if (!process.env[envVar]) {
@@ -134,12 +151,56 @@ const parseAppSecret = () => {
     }
     return secret;
 };
+
+// Optional Dropbox path root override.
+// Supports:
+// - home
+// - root:<root_namespace_id>
+// - ns:<namespace_id>
+// - raw JSON (e.g. {".tag":"root","root":"123"})
+const parseDropboxPathRoot = () => {
+    const rawPathRoot = process.env.DROPBOX_PATH_ROOT?.trim();
+    if (!rawPathRoot) return undefined;
+
+    if (rawPathRoot === 'home') {
+        return JSON.stringify({ '.tag': 'home' });
+    }
+
+    if (rawPathRoot.startsWith('root:')) {
+        const rootNamespaceId = rawPathRoot.slice('root:'.length).trim();
+        if (!rootNamespaceId) {
+            logger.warn('DROPBOX_PATH_ROOT is set to root: but no namespace ID was provided');
+            return undefined;
+        }
+        return JSON.stringify({ '.tag': 'root', root: rootNamespaceId });
+    }
+
+    if (rawPathRoot.startsWith('ns:')) {
+        const namespaceId = rawPathRoot.slice('ns:'.length).trim();
+        if (!namespaceId) {
+            logger.warn('DROPBOX_PATH_ROOT is set to ns: but no namespace ID was provided');
+            return undefined;
+        }
+        return JSON.stringify({ '.tag': 'namespace_id', namespace_id: namespaceId });
+    }
+
+    try {
+        JSON.parse(rawPathRoot);
+        return rawPathRoot;
+    }
+    catch {
+        logger.warn('DROPBOX_PATH_ROOT is not valid JSON and does not match supported shorthands (home, root:<id>, ns:<id>)');
+        return undefined;
+    }
+};
+
 export const config = {
     dropbox: {
         appKey: process.env.DROPBOX_APP_KEY,
         appSecret: parseAppSecret(),
         redirectUri: process.env.DROPBOX_REDIRECT_URI,
         accessToken: process.env.DROPBOX_ACCESS_TOKEN,
+        pathRoot: parseDropboxPathRoot(),
     },
     security: {
         tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY,
